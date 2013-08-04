@@ -19,12 +19,12 @@ namespace wmp
 {
 namespace base
 {
-typedef unsigned char		ui8;
-typedef unsigned short		ui16;
-typedef unsigned int		ui32;
-typedef unsigned __int64	ui64;
-typedef ui32				uid;
-typedef time_t				ttime;
+typedef unsigned char        ui8;
+typedef unsigned short       ui16;
+typedef unsigned int		  ui32;
+typedef unsigned __int64     ui64;
+typedef ui32                uid;
+typedef time_t              ttime;
 }
 }
 
