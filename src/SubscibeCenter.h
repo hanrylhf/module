@@ -5,6 +5,7 @@
 
 #include <map>
 #include <vector>
+#include <list>
 
 namespace wmp
 {
@@ -24,8 +25,22 @@ class SubscibeCenter : public ISubscibeCenter
 	typedef std::vector<tdelay_event>				tvecevent;
 	typedef std::map<wmp::base::ui64,tvecevent>		tmap_tickcount2event;
 
-	typedef std::map<IObserver*,std::string>		tmap_observer2desc;
-	typedef std::vector<tmap_observer2desc>			tvecobserver;
+	template<typename T>
+	struct tsubscibe_info
+	{
+		T* obj;
+		std::string desc;
+		bool remove_flag;
+		wmp::base::ui8 counter;
+		tsubscibe_info( T* obj_, const char* desc_):obj(obj_),desc(desc_),remove_flag(false),counter(0){}
+		void Add(){ ++counter;}
+		void Sub(){ counter > 0 ? --counter : 0;}
+	};
+	typedef tsubscibe_info<IObserver>				tsubscibe_observer;
+	typedef std::list<tsubscibe_observer>			tlstsubscibe_observer;
+
+	//typedef std::map<IObserver*,std::string>		tmap_observer2desc;
+	typedef std::vector<tlstsubscibe_observer>		tvecobserver;
 	// key : event_id
 	typedef std::map<wmp::base::ui16,tvecobserver>	tmap_evtid2observer;	
 

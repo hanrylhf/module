@@ -7,9 +7,14 @@ namespace wmp
 {
 namespace module
 {
+// 订阅函数重入最大数
+#define SUBSCIBE_REENTRY_NUM		20
+// 回调函数重入最大数
+#define CALLBACK_REENTRY_NUM		5
+
 void SubscibeCenter::Release()
 {
-
+	delete this;
 }
 
 void SubscibeCenter::OnTimer( wmp::base::ui32 timer_id, wmp::base::ttime now )
@@ -43,12 +48,9 @@ bool SubscibeCenter::Subscibe( IObserver& observer, wmp::base::ui16 event_id, wm
 	{
 		rvecobserver.resize(0xFF);
 	}
-	tmap_observer2desc& robserver2desc = rvecobserver[index-1];
-	if (robserver2desc.find(&observer) == robserver2desc.end())
-	{
-		robserver2desc.insert(std::make_pair(&observer,desc));
-		return true;
-	}
+	tlstsubscibe_observer& rlstobserver = rvecobserver[index-1];
+	tsubscibe_observer obj(&observer,desc);
+	rlstobserver.push_back(obj);
 	return false;
 }
 
@@ -73,8 +75,23 @@ bool SubscibeCenter::UnSubscibe( IObserver& observer, wmp::base::ui16 event_id, 
 	tvecobserver& rvecobserver = m_mapobserver[event_id];
 	if (rvecobserver.size() >= index )
 	{
-		tmap_observer2desc& robserver2desc = rvecobserver[index-1];
-		robserver2desc.erase(&observer);
+		tlstsubscibe_observer& rlstobserver = rvecobserver[index-1];
+		for(tlstsubscibe_observer::iterator it = rlstobserver.begin(); it != rlstobserver.end(); ++it)
+		{
+			tsubscibe_observer& robserver = *it;
+			if (robserver.obj == &observer)
+			{
+				if (robserver.counter)
+				{
+					robserver.remove_flag = true;
+				}
+				else
+				{
+					rlstobserver.erase(it);
+				}
+				break;
+			}
+		}
 	}
 	return true;
 }
@@ -129,10 +146,35 @@ void SubscibeCenter::DoPostEvent( wmp::base::ui16 event_id, char* pData, wmp::ba
 	m_loop_observer = true;
 	for (tvecobserver::iterator it = rvecobserver.begin(); it != rvecobserver.end(); ++it)
 	{
-		tmap_observer2desc& observer2desc = *it;
-		for(tmap_observer2desc::iterator it_observer = observer2desc.begin(); it_observer!= observer2desc.end(); ++it_observer)
+		tlstsubscibe_observer& rlstobserver = *it;
+		for(tlstsubscibe_observer::iterator itvalue = rlstobserver.begin(); itvalue != rlstobserver.end(); )
 		{
-			(it_observer->first)->OnEvent(event_id, pData, len);
+			tsubscibe_observer& robserver = *itvalue;
+			if (!robserver.remove_flag)
+			{
+				robserver.Add();
+				robserver.obj->OnEvent(event_id, pData, len);
+				robserver.Sub();
+				if (robserver.remove_flag && !robserver.counter)
+				{
+					itvalue = rlstobserver.erase(itvalue);
+				}
+				else
+				{
+					++itvalue;
+				}
+			}
+			else
+			{
+				if (!robserver.counter)
+				{
+					itvalue = rlstobserver.erase(itvalue);
+				}
+				else
+				{
+					++itvalue;
+				}
+			}
 		}
 	}
 	m_loop_observer = false;
