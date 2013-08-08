@@ -36,16 +36,16 @@ class SubscibeCenter : public ISubscibeCenter
 		void Add(){ ++counter;}
 		void Sub(){ counter > 0 ? --counter : 0;}
 	};
+
 	typedef tsubscibe_info<IObserver>				tsubscibe_observer;
 	typedef std::list<tsubscibe_observer>			tlstsubscibe_observer;
-
-	//typedef std::map<IObserver*,std::string>		tmap_observer2desc;
 	typedef std::vector<tlstsubscibe_observer>		tvecobserver;
 	// key : event_id
 	typedef std::map<wmp::base::ui16,tvecobserver>	tmap_evtid2observer;	
 
-	typedef std::map<IVoter*,std::string>			tmap_voter2desc;
-	typedef std::vector<tmap_voter2desc>			tvecvoter;
+	typedef tsubscibe_info<IVoter>					tsubscibe_vote;
+	typedef std::list<tsubscibe_vote>				tlstsubscibe_vote;
+	typedef std::vector<tlstsubscibe_vote>			tvecvoter;
 	// key : event_id
 	typedef std::map<wmp::base::ui16,tvecvoter>		tmap_evtid2voter;	
 public:

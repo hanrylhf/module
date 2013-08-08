@@ -51,7 +51,7 @@ bool SubscibeCenter::Subscibe( IObserver& observer, wmp::base::ui16 event_id, wm
 	tlstsubscibe_observer& rlstobserver = rvecobserver[index-1];
 	tsubscibe_observer obj(&observer,desc);
 	rlstobserver.push_back(obj);
-	return false;
+	return true;
 }
 
 bool SubscibeCenter::Subscibe( IVoter& voter, wmp::base::ui16 event_id, wmp::base::ui8 index, const char* desc )
@@ -61,13 +61,9 @@ bool SubscibeCenter::Subscibe( IVoter& voter, wmp::base::ui16 event_id, wmp::bas
 	{
 		rvecvoter.resize(0xFF);
 	}
-	tmap_voter2desc& rvoter2desc = rvecvoter[index-1];
-	if (rvoter2desc.find(&voter) == rvoter2desc.end())
-	{
-		rvoter2desc.insert(std::make_pair(&voter,desc));
-		return true;
-	}
-	return false;
+	tlstsubscibe_vote& rlstvoter = rvecvoter[index-1];
+	tsubscibe_vote obj(&voter,desc);
+	return true;
 }
 
 bool SubscibeCenter::UnSubscibe( IObserver& observer, wmp::base::ui16 event_id, wmp::base::ui8 index )
@@ -101,8 +97,23 @@ bool SubscibeCenter::UnSubscibe( IVoter& voter, wmp::base::ui16 event_id, wmp::b
 	tvecvoter& rvecvoter = m_mapvoter[event_id];
 	if (rvecvoter.size() >= index )
 	{
-		tmap_voter2desc& rvoter2desc = rvecvoter[index-1];
-		rvoter2desc.erase(&voter);
+		tlstsubscibe_vote& rlstvoter = rvecvoter[index-1];
+		for(tlstsubscibe_vote::iterator it = rlstvoter.begin(); it != rlstvoter.end(); ++it)
+		{
+			tsubscibe_vote& rvote = *it;
+			if (rvote.obj == &voter)
+			{
+				if (rvote.counter)
+				{
+					rvote.remove_flag = true;
+				}
+				else
+				{
+					rlstvoter.erase(it);
+				}
+				break;
+			}
+		}
 	}
 	return true;
 }
@@ -127,10 +138,10 @@ bool SubscibeCenter::PostVote( wmp::base::ui16 event_id, char* pData, wmp::base:
 	m_loop_voter = true;
 	for (tvecvoter::iterator it = rvecvoter.begin(); it != rvecvoter.end(); ++it)
 	{
-		tmap_voter2desc& voter2desc = *it;
-		for(tmap_voter2desc::iterator it_voter = voter2desc.begin(); it_voter != voter2desc.end(); ++it_voter)
+		tlstsubscibe_vote& rlstvoter = *it;
+		for(tlstsubscibe_vote::iterator it_voter = rlstvoter.begin(); it_voter != rlstvoter.end(); ++it_voter)
 		{
-			if (!(it_voter->first)->OnVoter(event_id, pData, len))
+			if (!(*it_voter).obj->OnVoter(event_id, pData, len))
 			{
 				return false;
 			}
